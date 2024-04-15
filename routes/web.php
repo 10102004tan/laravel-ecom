@@ -15,9 +15,8 @@ Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name
 
 Auth::routes();
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
-
-
 Route::prefix('admin')->middleware(['auth'])->group(function () {
-    Route::resource('dashboard', AdminDashboardController::class);
+    Route::get('dashboard', AdminDashboardController::class)->name("dashboard");
     Route::resource('categories', CategoryController::class);
+    Route::get('brands', App\Livewire\Admin\Brand\Index::class);
 });

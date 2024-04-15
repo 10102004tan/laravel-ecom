@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CategoryFormRequest;
+use Illuminate\Support\Str;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 
 class CategoryController extends Controller
 {
@@ -28,11 +29,30 @@ class CategoryController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(CategoryFormRequest $request)
+    public function store(Request $request)
     {
-        $validated = $request->validated();
+
+        $validated = $request->validate([
+            'name' => 'required',
+            'description' => 'required',
+            'status' => 'required'
+        ],
+        [
+            'name.required' => 'Name is required',
+            'description.required' => 'Description is required',
+            'status.required' => 'Status is required'
+        ]
+        );
+        //upload file image
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $image_name = time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('uploads/category'), $image_name);
+            $validated['image'] = $image_name;
+        }
+        $validated['slug'] = Str::slug($request->name);
         Category::create($validated);
-        return redirect()->route('admin.category.index')->with('success', 'Category created successfully');
+        return redirect()->route('categories.index')->with('success', 'Category created successfully');
     }
 
     /**
@@ -48,7 +68,7 @@ class CategoryController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        return view('admin.category.edit');
     }
 
     /**
@@ -62,8 +82,12 @@ class CategoryController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
-    {
-        //
+    public function destroy(Category $category)
+    {   
+        if (File::exists(public_path('uploads/category/' . $category->image))) {
+            File::delete(public_path('uploads/category/' . $category->image));
+        }
+        $category->delete();
+        return redirect()->route('categories.index')->with('success', 'Category delete successfully');
     }
 }
